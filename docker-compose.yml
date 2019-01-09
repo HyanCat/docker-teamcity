@@ -1,0 +1,49 @@
+version: "3"
+services:
+  server:
+    image: jetbrains/teamcity-server:2018.2.1
+    volumes:
+      - ./data:/data/teamcity_server/datadir
+      - ./logs:/opt/teamcity/logs
+    links:
+      - "database"
+    ports:
+      - "8111:8111"
+    networks:
+      - teamcity
+  
+  database:
+    image: mysql
+    ports:
+      - "3309:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+    volumes:
+      - ./mysql/conf.d:/etc/mysql/conf.d
+      - ./mysql/data:/var/lib/mysql
+    networks:
+      - teamcity
+
+  agent:
+    image: jetbrains/teamcity-agent
+    volumes:
+      - ./conf:/data/teamcity_agent/conf
+    links:
+      - "server"
+    environment:
+      SERVER_URL: server:8111
+    networks:
+      - teamcity
+  
+  php_agent:
+    image: rockmagicnet/teamcity-agent-php
+    links:
+      - "server"
+    environment:
+      SERVER_URL: server:8111
+    networks:
+      - teamcity
+
+networks:
+  teamcity:
+    driver: "bridge"
